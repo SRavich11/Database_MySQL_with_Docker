@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # MySQL container
+  db:
+    image: mysql:latest
+    container_name: purdue_db
+    environment:
+      MYSQL_ROOT_PASSWORD: secretpass
+      MYSQL_DATABASE: Company
+    volumes:
+      - purdue_db_data:/var/lib/mysql 
+    ports:
+      - "3306:3306"  # Expose MySQL port to host machine
+    networks:
+      - company-network
+
+  # PHP container
+  php:
+    build: .
+    container_name: php-container
+    ports:
+      - "8080:80"
+    volumes:
+      - ./company-ui:/var/www/html  # Mount your PHP code to the container
+    depends_on:
+      - db  # Make sure DB starts before PHP
+      - redis  # Ensure Redis starts before PHP
+    networks:
+      - company-network
+
+  # Redis container
+  redis:
+    image: redis:6.0
+    container_name: redis-container
+    ports:
+      - "6379:6379"  # Expose Redis port to host machine
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf  # Optional: custom Redis config
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]  # Use custom config if needed
+    networks:
+      - company-network
+
+networks:
+  company-network:
+    driver: bridge
+
+volumes:
+  purdue_db_data:
